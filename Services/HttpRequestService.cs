@@ -14,14 +14,12 @@ namespace PullDataApi.Services
         private string _dirUri;
         private string _fileUri;
 
-        public HttpRequestService()
+        public HttpRequestService(IHttpClientFactory factory)
         {
-            _client = new HttpClient()
-            {
-                BaseAddress = new Uri("https://jsonplaceholder.typicode.com")
-            };
-            _fileUri = "..\\Files\\{0}.json";
-            _dirUri = "..\\Files";
+            _client = factory.CreateClient();
+            _client.BaseAddress = new Uri("https://jsonplaceholder.typicode.com");            
+            _fileUri = "Files\\{0}.json";
+            _dirUri = "Files";
         }      
 
         // Tasks to do when starting up the service
