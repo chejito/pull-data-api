@@ -44,10 +44,11 @@ namespace PullDataApi.Services
             var response = await _client.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
-                Log.Information($"Retrieving {appender} from External Api");
+                Log.Information($"Retrieving '{appender}' from External Api");
                 var stringResponse = await response.Content.ReadAsStringAsync();
-                Log.Information("Saving data to file");
-                File.WriteAllText(string.Format(_fileUri, appender), stringResponse);
+                var fileName = string.Format(_fileUri, appender);
+                Log.Information($"Saving data to file '{fileName}'");
+                File.WriteAllText(fileName, stringResponse);
             }
             else
             {
