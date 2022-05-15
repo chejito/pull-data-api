@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using PullDataApi.Persistance;
 using PullDataApi.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 
 namespace PullDataApi
 {
@@ -25,6 +26,19 @@ namespace PullDataApi
 
             services.AddHttpClient();
 
+            services.AddDbContext<DataContext>(builder =>
+            {
+                builder.UseInMemoryDatabase("TestDb");
+            });
+            services.AddHttpContextAccessor();
+            services.AddSingleton<IUriService>(o =>
+            {
+                var accessor = o.GetRequiredService<IHttpContextAccessor>();
+                var request = accessor.HttpContext.Request;
+                var uri = string.Concat(request.Scheme, "://", request.Host.ToUriComponent());
+                return new UriService(uri);
+            });
+
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
@@ -34,10 +48,7 @@ namespace PullDataApi
             // Here is registered the hosted Service that runs in background while api is running
             services.AddHostedService<HttpRequestService>();
             services.AddHostedService<DataSeeder>();
-            services.AddDbContext<DataContext>(builder =>
-            {
-                builder.UseInMemoryDatabase("TestDb");
-            });
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

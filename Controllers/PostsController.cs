@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PullDataApi.Helpers;
 using PullDataApi.Models;
 using PullDataApi.Persistance;
+using PullDataApi.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,50 +17,40 @@ namespace PullDataApi.Controllers
     public class PostsController : ControllerBase
     {
         private readonly DataContext _context;
-        public PostsController(DataContext context)
+        private readonly IUriService _uriService;
+        public PostsController(DataContext context, IUriService uriService)
         {
             _context = context;
-        }
+            _uriService = uriService;
+        }        
 
-        // GET: api/<PostsController>
         [HttpGet]
-        public IActionResult Get()
+        public async Task<IActionResult> GetAll([FromQuery] PaginationFilter filter)
         {
-            var posts = _context.Posts.ToList();
-            return Ok(new Response<IEnumerable<Post>>(posts));
+            var route = Request.Path.Value;
+            var validFilter = new PaginationFilter(filter.PageNumber, filter.PageSize);
+            var pagedData = await _context.Posts
+                .Skip((validFilter.PageNumber - 1) * validFilter.PageSize)
+                .Take(validFilter.PageSize)
+                .ToListAsync();
+            var totalRecords = await _context.Posts.CountAsync();
+            var pagedResponse = PaginationHelper.CreatePagedReponse<Post>(pagedData, validFilter, totalRecords, _uriService, route);
+            return Ok(pagedResponse);
         }
 
         // GET api/<PostsController>/5
         [HttpGet("{id}")]
-        public IActionResult Get(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var post = _context.Posts.ToList()
-                .Where(p => p.Id == id).FirstOrDefault();
-            if (post == null)
+            var response = await  _context.Posts
+                .Where(p => p.Id == id).FirstOrDefaultAsync();
+            if (response == null)
                 return BadRequest(new Response<Post>
                 {
                     Succeeded = false,
                     Message = $"No posts with id: {id}"
                 });
-            return Ok(new Response<Post>(post));
-        }
-
-        /*// POST api/<PostsController>
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
-        }
-
-        // PUT api/<PostsController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/<PostsController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }*/
+            return Ok(new Response<Post>(response));
+        }        
     }
 }
